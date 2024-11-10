@@ -1,0 +1,45 @@
+package com.codegnan.interfaces;
+
+import com.codegnan.customExceptions.InsufficientBalanceException;
+import com.codegnan.customExceptions.InsufficientMachineBalanceException;
+import com.codegnan.customExceptions.InvalidAmountException;
+import com.codegnan.customExceptions.NotAOperatorException;
+
+public interface IATMService {
+	
+	//to get the user type whether  user is operator or normal user
+	public abstract String getUserType() throws NotAOperatorException;
+	
+	//to withdraw amount
+	//1. will throw InvalidAmountException if amount is not valid denomination.
+	//2.will throw InsufficientBalanceException if the customer has Insufficient in his/her account.
+	//3.will throw InsufficientMachineBalanceException if the machine has insufficient cash.
+	public abstract double withdrawAmount(double wthAmount) throws InvalidAmountException, InsufficientBalanceException, InsufficientMachineBalanceException;
+	
+	//to depositAmount
+	public abstract void depositAmount(double deptAmount) throws InvalidAmountException;
+	
+	//to check Balance
+	public abstract double checkAccountBalance();
+	
+	//to change PIN NUM
+	public abstract void changePinNumber(int pinNumber);
+
+	//to get the PIN Number
+	public abstract int getPinNumber();
+	
+	//to get user name
+	public abstract String getUserName();
+	
+	//to decrease the number of chances while enter the wrong PIN number.
+	public abstract void decreseChances();
+	
+	//to get the chances of pin number.
+	public abstract int getChances();
+	
+	//to reset the pin number chances by the bank operator.
+	public abstract void resetPinChances();
+	
+	//to generate MiNi statement of an account.
+	public abstract void generateMinistatement();
+}
