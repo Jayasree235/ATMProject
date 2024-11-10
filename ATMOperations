@@ -1,5 +1,6 @@
 
 package com.codegnan.operations;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -8,7 +9,7 @@ import com.codegnan.cards.AxisDebitCard;
 import com.codegnan.cards.HDFCDebitCard;
 import com.codegnan.cards.OperatorCard;
 import com.codegnan.cards.SBIDebitCard;
-import com.codegnan.customExceptions.IncorrectPinLimitReachedException;
+import com.codegnan.customExceptions.IncorrectPinException;
 import com.codegnan.customExceptions.InsufficientBalanceException;
 import com.codegnan.customExceptions.InsufficientMachineBalanceException;
 import com.codegnan.customExceptions.InvalidAmountException;
@@ -16,263 +17,278 @@ import com.codegnan.customExceptions.InvalidCardException;
 import com.codegnan.customExceptions.InvalidPinException;
 import com.codegnan.customExceptions.NotAOperatorException;
 import com.codegnan.interfaces.IATMService;
+
 public class ATMOperations {
-	// Initial ATM machine balance
-	public static double ATM_MACHINE_BALANCE = 100000.0;
-	// List to keep track of all activities performed on the ATM
+
+	// initial ATM machine balance
+	public static double ATM_MACHINE_BALANCE = 1000000.0;
+
+	// loop to keep the track of all activities performed on the machine
 	public static ArrayList<String> ACTIVITY = new ArrayList<>();
-	// Database to map card numbers to card objects
+
+	// Database to map card numbers to card objects.
 	public static HashMap<Long, IATMService> dataBase = new HashMap<>();
-	// Flag to indicate if the ATM machine is on or off
+
+	// Flag to indicate ATM machine is on or off
 	public static boolean MACHINE_ON = true;
-	// Reference to the current card in use
+
+	// reference the current card in use
 	public static IATMService card;
-	// Validate the inserted card by checking against the database
+
+	// validate the inserted card by checking against the database
 	public static IATMService validateCard(long cardNumber) throws InvalidCardException {
 		if (dataBase.containsKey(cardNumber)) {
 			return dataBase.get(cardNumber);
 		} else {
-			ACTIVITY.add("Accessed by: " + cardNumber + " is Not Compatible");
-			throw new InvalidCardException("This is Not A valid Card");
+			ACTIVITY.add("Accessed by : " + cardNumber + " is not compatiable");
+			throw new InvalidCardException("this is not a valid card");
 		}
+
 	}
-	// Display the activities performed on the ATM
+
+	// display the activites performed on the ATM machine
 	public static void checkATMMachineActivities() {
-		System.out.println("=================== Activities Performed ===================");
+		System.out.println("=============Activities performed ===============");
 		for (String activity : ACTIVITY) {
-			System.out.println("==========================================================");
+			System.out.println("========================================================");
 			System.out.println(activity);
-			System.out.println("==========================================================");
+			System.out.println("========================================================");
 		}
 	}
-	// Reset the number of PIN attempts for a user
+
+	// reset the number of pin attempts for a user
 	public static void resetUserAttempts(IATMService operatorCard) {
 		IATMService card = null;
 		long number;
 		Scanner scanner = new Scanner(System.in);
-		System.out.println("Enter your CARD Number:");
+		System.out.println("Enter your card number:");
 		number = scanner.nextLong();
 		try {
 			card = validateCard(number);
-			card.resetPinChances(); // Resetting PIN attempts for the specified card
-			ACTIVITY.add("Accessed By: " + operatorCard.getUserName() + " to reset number of chances for user.");
+			card.resetPinChances();
+			ACTIVITY.add("Accessed by : " + operatorCard.getUserName() + ": to resset the number of chances");
+
 		} catch (InvalidCardException ive) {
 			System.out.println(ive.getMessage());
 		}
+
 	}
-	// Validate user credentials including PIN verification
-	public static IATMService validateCredentials(long cardNumber, int pinNumber)
-			throws InvalidCardException, IncorrectPinLimitReachedException, InvalidPinException {
+
+	public static IATMService validCredentials(long cardNumber, int pinNumber)
+			throws InvalidCardException, InvalidPinException, IncorrectPinException {
 		if (dataBase.containsKey(cardNumber)) {
 			card = dataBase.get(cardNumber);
 		} else {
-			throw new InvalidCardException("This card is Not A valid Card");
+			throw new InvalidCardException("this is not a valid card");
 		}
 		try {
 			if (card.getUserType().equals("operator")) {
-				// Operators have a different PIN validation process
 				if (card.getPinNumber() != pinNumber) {
-					throw new InvalidPinException("Dear operator, Please enter Correct PIN Number");
-				} else {
-					return card;
+					throw new InvalidPinException("Dear operator,please enter correct pin number");
 				}
+			} else {
+				return card;
 			}
 		} catch (NotAOperatorException noe) {
 			noe.printStackTrace();
 		}
-		// Validate PIN and handle incorrect attempts
+		// validate pin and handle incorrect attempts
 		if (card.getChances() >= 3) {
-			throw new IncorrectPinLimitReachedException(
-					"You have Reached Wrong Limit of PIN Number, which is 3 attempts");
+			throw new IncorrectPinException("you have reached wrong limit of pin number which is 3  attempts ");
 		}
 		if (card.getPinNumber() != pinNumber) {
-			card.decreaseChances(); // Decrease the number of remaining chances
-			throw new InvalidPinException("You Have Entered A Wrong PIN Number");
+			card.decreaseChances();// decrease the no of chances and tells the remaining chances
+			throw new InvalidPinException("you have entered a wrong PIN number");
 		} else {
 			return card;
 		}
 	}
-	// Validate the amount for withdrawal to ensure sufficient machine balance
+	// validate the amount for withdrawal to ensure sufficient machine balance
+
 	public static void validateAmount(double amount) throws InsufficientMachineBalanceException {
 		if (amount > ATM_MACHINE_BALANCE) {
-			throw new InsufficientMachineBalanceException("Insufficient cash in the Machine");
+			throw new InsufficientMachineBalanceException("Insufficient cash in the machine");
 		}
 	}
-	// Validate deposit amount to ensure it meets machine requirements
-	public static void validateDepositAmount(double amount)
+
+	public static void validateDepositeAmount(double amount)
 			throws InsufficientMachineBalanceException, InvalidAmountException {
-		// Ensure deposit amount is a multiple of 100
+		// ensure deposit multiples of 100
 		if (amount % 100 != 0) {
-			throw new InvalidAmountException("Please deposit amounts in multiples of 100.");
+			throw new InvalidAmountException("Please deposite multiples of 100");
 		}
-		// Check if deposit will exceed machine capacity
+		// check if deposit will exceed the machine capacity
 		if (amount + ATM_MACHINE_BALANCE > 1200000.0d) {
-			ACTIVITY.add("Unable to deposit cash in the machine...");
-			throw new InsufficientMachineBalanceException(
-					"You can't deposit cash as the limit of the machine is reached.");
+			ACTIVITY.add("unable to deposite cash in ATM machine....");
+			throw new InsufficientMachineBalanceException("you can't deposite cash as limit of atm machine ");
 		}
 	}
-	// Operations available in operator mode
+
+	// operations avilable on operator mode
 	public static void operatorMode(IATMService card) {
 		Scanner scanner = new Scanner(System.in);
 		double amount;
 		boolean flag = true;
 		while (flag) {
-			System.out.println("OPERATOR MODE: Operator Name: " + card.getUserName());
-			System.out.println("===================================================");
-			System.out.println("||            	0. Switch Off The Machine 	          ||");
-			System.out.println("||            	1. To Check The ATM Machine Balance   ||");
-			System.out.println("||            	2. Deposit Cash In The Machine 	      ||");
-			System.out.println("||            	3. Reset The User PIN Attempts        ||");
-			System.out.println("||	            4. To Check Activities Performed In the Machine  ||");
-			System.out.println("||            	5. Exit Operator Mode   	         ||");
-			System.out.println("Please Enter Your Choice: ");
+			System.out.println("operator mode: operator name: " + card.getUserName());
+			System.out.println("====================================================================");
+			System.out.println("||            0.Switch off the machine                ||");
+			System.out.println("||            1.To check ATM machine balance                ||");
+			System.out.println("||            2.Deposite cash in ATM machine               ||");
+			System.out.println("||            3.Reset user pin attempts                ||");
+			System.out.println("||            4.To check activities performed in the machine                ||");
+			System.out.println("||            5.Exit operator mode                ||");
+			System.out.println("Please enter your choice");
 			int option = scanner.nextInt();
 			switch (option) {
 			case 0:
-				MACHINE_ON = false; // Turn off the machine
+				MACHINE_ON = false;
 				ACTIVITY.add(
-						"Accessed By " + card.getUserName() + " Activity Performed: Switching Off The ATM Machine");
+						"Accessed by : " + card.getUserName() + " Activity performed: switching off the ATM machine");
 				flag = false;
 				break;
 			case 1:
-				ACTIVITY.add("Accessed By " + card.getUserName() + " Activity Performed: Checking ATM Machine Balance");
-				System.out.println("The Balance Of ATM Machine Is: " + ATM_MACHINE_BALANCE + " Is Available");
+				ACTIVITY.add(
+						"Accessed by : " + card.getUserName() + " Activity performed: checking ATM machine balance ");
+				System.out.println("the balance of ATM machine is : " + ATM_MACHINE_BALANCE + ": is available");
 				break;
 			case 2:
-				System.out.println("Enter The Amount To Deposit: ");
+				System.out.println("enter the amount to deposite : ");
 				amount = scanner.nextDouble();
 				try {
-					validateDepositAmount(amount); // Validate deposit amount
-					ATM_MACHINE_BALANCE += amount; // Update ATM balance
-					ACTIVITY.add("Accessed By " + card.getUserName()
-							+ " Activity Performed: Depositing Cash in The ATM Machine");
-					System.out.println("==================================================================");
+					validateDepositeAmount(amount); // validate deposite amount
+					ATM_MACHINE_BALANCE += amount;
+					ACTIVITY.add("Accessed by : " + card.getUserName()
+							+ " Activity performed: deposite cash in the  ATM machine ");
+					System.out.println("=====================================================================");
 					System.out.println(
-							"========================== Cash Added In The ATM Machine =========================");
-					System.out.println("==================================================================");
-				} catch (InvalidAmountException | InsufficientMachineBalanceException e) {
+							"===================================cash added to the ATM machine ==================================");
+					System.out.println("=====================================================================");
+				} catch (InvalidAmountException e) {
+					System.out.println(e.getMessage());
+				} catch (InsufficientMachineBalanceException e) {
 					System.out.println(e.getMessage());
 				}
 				break;
 			case 3:
-				resetUserAttempts(card); // Reset user's PIN attempts
-				System.out.println("==================================================================");
-				System.out.println("========================== User Attempts Are Reset ========================");
-				System.out.println("==================================================================");
-				ACTIVITY.add("Accessed By " + card.getUserName()
-						+ " Activity Performed: Resetting The PIN Attempts Of User");
+				resetUserAttempts(card);
+				System.out.println("=====================================================================");
+				System.out.println(
+						"===================================user attempts are reset ==================================");
+				System.out.println("=====================================================================");
+				ACTIVITY.add("Accessed by : " + card.getUserName()
+						+ " Activity performed: resetting user pin attempts of user ");
 				break;
 			case 4:
-				checkATMMachineActivities(); // Display ATM activities
+				checkATMMachineActivities(); // display ATMA activities
 				break;
 			case 5:
-				flag = false; // Exit operator mode
+				flag = false; // exit operator mode
 				break;
 			default:
-				System.out.println("You Have Entered A Wrong Option");
+				System.out.println("you have entered a wrong option");
+
 			}
 		}
 	}
-	public static void main(String[] args) throws NotAOperatorException {
-		// Initialize the database with some sample card data
-		dataBase.put(222222221L, new AxisDebitCard(222222221L, "yashas", 50000.0, 2222));
-		dataBase.put(3333333331L, new SBIDebitCard(3333333331L, "Akshay", 55000.0, 3333));
-		dataBase.put(4444444441L, new AxisDebitCard(4444444441L, "Das", 32500.0, 4444));
-		dataBase.put(5555555551L, new HDFCDebitCard(5555555551L, "Aravind", 71000.0, 5555));
-		dataBase.put(1111111111L, new OperatorCard(1111111111L, 1111, "Operator 1"));
+
+	public static void main(String[] args) throws NotAOperatorException{
+		// initialize the database some sample input data
+		dataBase.put(2222222222l, new AxisDebitCard(2222222222l,"yesu",50000.0,2222) );
+		dataBase.put(3333333333l, new HDFCDebitCard(3333333333l,"sathsena",30000.0,3333) );
+		dataBase.put(4444444444l, new SBIDebitCard(4444444444l,"yuva",70000.0,4444) );
+		dataBase.put(1111111111l, new OperatorCard(1111111111l,1111,"riya") );
+		
 		Scanner scanner = new Scanner(System.in);
 		long cardNumber = 0;
-		double depositAmount = 0.0;
+		double depositeAmount = 0.0;
 		double withdrawAmount = 0.0;
 		int pin = 0;
-		// Main loop for ATM operations
-		while (MACHINE_ON) {
-			System.out.println("Please Enter the Debit Card Number:");
+		// main loop for ATM Operations.
+		while(MACHINE_ON) {
+			System.out.println("Pleae enter the debit card number");
 			cardNumber = scanner.nextLong();
 			try {
-				System.out.println("Please Enter PIN Number:");
+				System.out.println("Enter the pin");
 				pin = scanner.nextInt();
-				card = validateCredentials(cardNumber, pin); // Validate card and PIN
+				card = validCredentials(cardNumber,pin); // validate card and pin
+				
 				if (card == null) {
-					System.out.println("Card validation failed.");
+					System.out.println("card validation failed");
 					continue;
 				}
-				ACTIVITY.add("Accessed By: " + card.getUserName() + " Status: Access Approved");
-				if (card.getUserType().equals("operator")) {
-					operatorMode(card); // Enter operator mode
+				ACTIVITY.add("ACCESSED by : " + card.getUserName()+" status: Access approved");
+				if(card.getUserType().equals("operator")) {
+					operatorMode(card);
 					continue;
 				}
-				while (true) {
-					System.out.println("USER MODE: " + card.getUserName());
-					System.out.println("===================================================");
-					System.out.println("||            	1. Withdraw Amount         	||");
-					System.out.println("||            	2. Deposit Amount          	||");
-					System.out.println("||            	3. Check Balance          	||");
-					System.out.println("||            	4. Change PIN             	||");
-					System.out.println("||            	5. Mini Statement         	||");
-					System.out.println("===================================================");
-					System.out.println("Enter Your Choice:");
+				while(true) {
+					System.out.println("USER MODE: "+card.getUserName());
+					System.out.println("==============================================");
+					System.out.println("||                 1.Withdraw Amount                  ||");
+					System.out.println("||                 2.Deposite Amount                  ||");
+					System.out.println("||                 3.Check Balance                  ||");
+					System.out.println("||                 4.Change PIN                  ||");
+					System.out.println("||                 5.Generate MINI statement                  ||");
+					System.out.println("==============================================");
+					System.out.println("Enter your choice : ");
 					int option = scanner.nextInt();
 					try {
-						switch (option) {
+						switch(option) {
 						case 1:
-							System.out.println("Please Enter The Amount to Withdraw: ");
+							System.out.println("Please Enter the Amount to withdraw ");
 							withdrawAmount = scanner.nextDouble();
-							validateAmount(withdrawAmount); // Validate withdrawal amount
-							card.withdrawAmount(withdrawAmount); // Withdraw amount
-							ATM_MACHINE_BALANCE -= withdrawAmount; // Update ATM balance
-							ACTIVITY.add("Accessed By " + card.getUserName() + " Activity: Amount Withdrawn "
-									+ withdrawAmount + " From Machine");
+							validateAmount(withdrawAmount);
+							card.withdrawAmount(withdrawAmount);
+							ATM_MACHINE_BALANCE = withdrawAmount;
+							ACTIVITY.add("ACCESSED by : " + card.getUserName()+" Activity : amount withdraw" +withdrawAmount+"from machine");
 							break;
 						case 2:
-							System.out.println("Please Enter The Amount to Deposit: ");
-							depositAmount = scanner.nextDouble();
-							validateDepositAmount(depositAmount); // Validate deposit amount
-							ATM_MACHINE_BALANCE += depositAmount; // Update ATM balance
-							card.depositAmount(depositAmount); // Deposit amount
-							ACTIVITY.add("Accessed By " + card.getUserName() + " Activity: Amount Deposited "
-									+ depositAmount + " in the Machine");
+							System.out.println("Please enter the amount to deposite");
+							depositeAmount = scanner.nextDouble();
+							validateDepositeAmount(depositeAmount);
+							ATM_MACHINE_BALANCE +=depositeAmount;
+							card.depositAmount(depositeAmount);
+							ACTIVITY.add("ACCESSED by : " + card.getUserName()+" Activity : amount deposited" +depositeAmount+"from machine");
 							break;
 						case 3:
-							System.out.println("Your Account Balance is: " + card.checkAccountBalance()); // Check
-																											// balance
-							ACTIVITY.add("Accessed By " + card.getUserName() + " Activity: Checking The Balance");
+							System.out.println("Your account balance is :" +card.checkAccountBalance());
+							ACTIVITY.add("ACCESSED by : " + card.getUserName()+" Activity :check balance " );
 							break;
-						case 4:
-							System.out.println("Enter A New PIN:");
+						case 4 :
+							System.out.println("enter a new pin");
 							pin = scanner.nextInt();
-							card.changePinNumber(pin); // Change PIN
-							ACTIVITY.add("Accessed By " + card.getUserName() + " Activity: Changed PIN Number");
+							card.changePinNumber(pin);
+							ACTIVITY.add("ACCESSED by : " + card.getUserName()+" Activity : changed pin number");
 							break;
-						case 5:
-							ACTIVITY.add("Accessed By " + card.getUserName() + " Activity: Generating MINI Statement");
-							card.generateMiniStatement(); // Generate mini statement
+						case 5 :
+							ACTIVITY.add("ACCESSED by : " + card.getUserName()+" Activity :generating mini statement" );
+							card.generateMiniStatement();
 							break;
-						default:
-							System.out.println("You Have Entered A Wrong Option");
-							break;
+							default:
+								System.out.println("you have entered a wrong option");
+								break;
 						}
-						System.out.println("Do You Want To Continue? (Y/N):");
+						System.out.println("do you want to continue?(y/n)");
 						String nextOption = scanner.next();
-						if (nextOption.equalsIgnoreCase("N")) {
-							break; // Exit user mode
+						if(nextOption.equalsIgnoreCase("N")) {
+							break;
 						}
-					} catch (InvalidAmountException | InsufficientBalanceException
-							| InsufficientMachineBalanceException e) {
+						
+					}catch(InvalidAmountException | InsufficientBalanceException|InsufficientMachineBalanceException e ) {
 						System.out.println(e.getMessage());
 					}
 				}
-			} catch (InvalidPinException | InvalidCardException |NullPointerException| IncorrectPinLimitReachedException e) {
-				ACTIVITY.add("Accessed By: " + card.getUserName() + " Status: Access Denied");
+			}catch(InvalidPinException|InvalidCardException|IncorrectPinException e) {
+				ACTIVITY.add("ACCESSED by : " + card.getUserName()+"Activity: status: access denied" );
 				System.out.println(e.getMessage());
+
 			}
 		}
-		// Display a message when the ATM machine is turned off
-		System.out.println("=====================================================");
-		System.out.println("============== Thanks For Using AXIS ATM Machine ==============");
-		System.out.println("===================================================================");
+		System.out.println("=================================================");
+		System.out.println("thank you for using AXIS bank");
+		System.out.println("=================================================");
+
 	}
+
 }
-
-
