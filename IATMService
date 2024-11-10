@@ -32,7 +32,7 @@ public interface IATMService {
 	public abstract String getUserName();
 	
 	//to decrease the number of chances while enter the wrong PIN number.
-	public abstract void decreseChances();
+	public abstract void decreaseChances();
 	
 	//to get the chances of pin number.
 	public abstract int getChances();
@@ -41,5 +41,5 @@ public interface IATMService {
 	public abstract void resetPinChances();
 	
 	//to generate MiNi statement of an account.
-	public abstract void generateMinistatement();
+	public abstract void generateMiniStatement();
 }
